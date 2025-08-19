@@ -1,0 +1,11 @@
+### Test API Health
+GET https://localhost:7001/api/test
+
+### Test API Health Endpoint
+GET https://localhost:7001/api/test/health
+
+### Get All Users
+GET https://localhost:7001/api/user
+
+### Get All Products
+GET https://localhost:7001/api/product
