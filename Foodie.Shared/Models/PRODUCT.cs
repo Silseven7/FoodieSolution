@@ -13,6 +13,6 @@ public class PRODUCT
     public decimal Price { get; set; }
     
     public string Category { get; set; } = string.Empty;
-    [ForeignKey(nameof(Models.ORDER_ITEMS.ProductId))]
-    public virtual ICollection<ORDER_ITEMS> OrderItems { get; set; } = new List<ORDER_ITEMS>();//hashset
+    
+    public virtual ICollection<ORDER_ITEMS> OrderItems { get; set; } = new List<ORDER_ITEMS>();
 }

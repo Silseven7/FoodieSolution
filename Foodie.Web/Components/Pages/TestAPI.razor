@@ -1,0 +1,100 @@
+@page "/testapi"
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Class="pa-6" Elevation="3">
+        <MudText Typo="Typo.h4" Class="mb-4" Color="Color.Primary">
+            🧪 API Connection Test
+        </MudText>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   OnClick="TestAPIConnection"
+                   Class="mb-4">
+            Test API Connection
+        </MudButton>
+        
+        @if (_loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        
+        @if (!string.IsNullOrEmpty(_result))
+        {
+            <MudAlert Severity="@_alertSeverity" Class="mt-4">
+                @_result
+            </MudAlert>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading = false;
+    private string _result = "";
+    private Severity _alertSeverity = Severity.Info;
+
+    private async Task TestAPIConnection()
+    {
+        try
+        {
+            _loading = true;
+            _result = "";
+            StateHasChanged();
+            
+            using var httpClient = new HttpClient();
+            
+            // Test 1: Basic connection
+            try
+            {
+                var response = await httpClient.GetAsync("https://localhost:7001/swagger");
+                if (response.IsSuccessStatusCode)
+                {
+                    _result += "✅ Swagger UI accessible\n";
+                    _alertSeverity = Severity.Success;
+                }
+                else
+                {
+                    _result += $"❌ Swagger UI not accessible: {response.StatusCode}\n";
+                    _alertSeverity = Severity.Error;
+                }
+            }
+            catch (Exception ex)
+            {
+                _result += $"❌ Cannot connect to API: {ex.Message}\n";
+                _alertSeverity = Severity.Error;
+            }
+            
+            // Test 2: API endpoint
+            try
+            {
+                var response = await httpClient.PostAsync("https://localhost:7001/api/User/GetAllAsync", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    _result += $"✅ API endpoint working: {content.Substring(0, Math.Min(100, content.Length))}...\n";
+                    _alertSeverity = Severity.Success;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _result += $"❌ API endpoint error: {response.StatusCode} - {errorContent}\n";
+                    _alertSeverity = Severity.Error;
+                }
+            }
+            catch (Exception ex)
+            {
+                _result += $"❌ API endpoint failed: {ex.Message}\n";
+                _alertSeverity = Severity.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            _result = $"❌ Test failed: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+}

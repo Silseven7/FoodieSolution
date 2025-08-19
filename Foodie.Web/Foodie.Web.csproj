@@ -8,6 +8,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foodie.Client\Foodie.Client.csproj" />
+    <ProjectReference Include="..\Foodie.Shared\Foodie.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="6.15.0" />
   </ItemGroup>
 
 </Project>

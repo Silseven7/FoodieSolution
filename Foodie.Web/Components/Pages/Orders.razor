@@ -1,0 +1,103 @@
+@page "/orders"
+@using Foodie.Client.Services
+@using Foodie.Shared.Models
+@inject ClientOrderService OrderService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-6" Elevation="3">
+        <MudText Typo="Typo.h4" Class="mb-4" Color="Color.Primary">
+            📋 Orders Management
+        </MudText>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="LoadOrders"
+                   Class="mb-4">
+            Load Orders
+        </MudButton>
+        
+        @if (_loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_orders != null && _orders.Any())
+        {
+            <MudTable Items="@_orders" Hover="true" Striped="true" Class="mt-4">
+                <HeaderContent>
+                    <MudTh>ID</MudTh>
+                    <MudTh>User ID</MudTh>
+                    <MudTh>Order Date</MudTh>
+                    <MudTh>Total Amount</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.GetType().GetProperty("Id")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("UserId")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("OrderDate")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("TotalAmount")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("Status")?.GetValue(context)</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => EditOrder(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => DeleteOrder(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else if (_orders != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                No orders found. Click "Load Orders" to fetch data from the backend.
+            </MudAlert>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<ORDER>? _orders;
+    private bool _loading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+            
+            _orders = await OrderService.GetAllAsync();
+            Snackbar.Add($"Loaded {_orders?.Count ?? 0} orders successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading orders: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditOrder(ORDER order)
+    {
+        Snackbar.Add($"Edit order functionality coming soon!", Severity.Info);
+    }
+
+    private async Task DeleteOrder(ORDER order)
+    {
+        Snackbar.Add($"Delete order functionality coming soon!", Severity.Info);
+    }
+}

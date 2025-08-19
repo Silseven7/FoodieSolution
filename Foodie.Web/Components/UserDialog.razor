@@ -1,0 +1,88 @@
+@using Foodie.Shared.Models
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="@success">
+            <MudTextField @bind-Value="user.Name" 
+                         Label="Name" 
+                         Required="true" 
+                         RequiredError="Name is required!" />
+            
+            <MudTextField @bind-Value="user.LastName" 
+                         Label="Last Name" 
+                         Required="true" 
+                         RequiredError="Last Name is required!" />
+            
+            <MudTextField @bind-Value="user.IdNo" 
+                         Label="ID Number" 
+                         Required="true" 
+                         RequiredError="ID Number is required!" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="!success">Submit</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    
+    [Parameter] public USERS? User { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    
+    private MudForm form = default!;
+    private bool success;
+    private USERS user = new();
+    
+    protected override void OnInitialized()
+    {
+        if (IsEdit && User != null)
+        {
+            user = new USERS
+            {
+                Id = User.Id,
+                Name = User.Name,
+                LastName = User.LastName,
+                IdNo = User.IdNo
+            };
+        }
+    }
+    
+    private async Task Submit()
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            HttpResponseMessage response;
+            
+            if (IsEdit)
+            {
+                response = await httpClient.PostAsJsonAsync("https://localhost:7001/api/User/UpdateAsync", user);
+            }
+            else
+            {
+                response = await httpClient.PostAsJsonAsync("https://localhost:7001/api/User/AddAsync", user);
+            }
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var action = IsEdit ? "updated" : "added";
+                Snackbar.Add($"User {action} successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Operation failed: {response.StatusCode} - {errorContent}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+    
+    private void Cancel() => MudDialog.Cancel();
+}

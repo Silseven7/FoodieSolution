@@ -1,10 +1,22 @@
 using Foodie.Web.Components;
+using MudBlazor.Services;
+using Foodie.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+builder.Services.AddMudServices();
+
+// Add HttpClient
+builder.Services.AddHttpClient();
+
+// Register client services
+builder.Services.AddScoped<ClientUserService>();
+builder.Services.AddScoped<ClientProductService>();
+builder.Services.AddScoped<ClientOrderService>();
+builder.Services.AddScoped<ClientOrderItemService>();
 
 var app = builder.Build();
 
@@ -19,9 +31,10 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
-app.UseAntiforgery();
 
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.UseRouting();
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
 
 app.Run();

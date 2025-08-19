@@ -1,0 +1,101 @@
+@page "/products"
+@using Foodie.Client.Services
+@using Foodie.Shared.Models
+@inject ClientProductService ProductService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-6" Elevation="3">
+        <MudText Typo="Typo.h4" Class="mb-4" Color="Color.Primary">
+            🍔 Products Management
+        </MudText>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="LoadProducts"
+                   Class="mb-4">
+            Load Products
+        </MudButton>
+        
+        @if (_loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_products != null && _products.Any())
+        {
+            <MudTable Items="@_products" Hover="true" Striped="true" Class="mt-4">
+                <HeaderContent>
+                    <MudTh>ID</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>Price</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.GetType().GetProperty("Id")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("Name")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("Description")?.GetValue(context)</MudTd>
+                    <MudTd>@context.GetType().GetProperty("Price")?.GetValue(context)</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => EditProduct(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => DeleteProduct(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else if (_products != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                No products found. Click "Load Products" to fetch data from the backend.
+            </MudAlert>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<PRODUCT>? _products;
+    private bool _loading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+            
+            _products = await ProductService.GetAllAsync();
+            Snackbar.Add($"Loaded {_products?.Count ?? 0} products successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading products: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EditProduct(PRODUCT product)
+    {
+        Snackbar.Add($"Edit product functionality coming soon!", Severity.Info);
+    }
+
+    private async Task DeleteProduct(PRODUCT product)
+    {
+        Snackbar.Add($"Delete product functionality coming soon!", Severity.Info);
+    }
+}

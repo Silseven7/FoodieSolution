@@ -1,0 +1,174 @@
+@page "/users"
+@using Foodie.Shared.Models
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-6" Elevation="3">
+        <MudText Typo="Typo.h4" Class="mb-4" Color="Color.Primary">
+            👥 Users Management
+        </MudText>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="LoadUsers"
+                   Class="mb-4">
+            Load Users
+        </MudButton>
+        
+        <MudButton Variant="Variant.Filled" 
+                   Color="Color.Success" 
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="ShowAddDialog"
+                   Class="mb-4 ml-2">
+            Add New User
+        </MudButton>
+        
+        @if (_loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (_users != null && _users.Any())
+        {
+            <MudTable Items="@_users" Hover="true" Striped="true" Class="mt-4">
+                <HeaderContent>
+                    <MudTh>ID</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>Last Name</MudTh>
+                    <MudTh>ID No</MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Id</MudTd>
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>@context.LastName</MudTd>
+                    <MudTd>@context.IdNo</MudTd>
+                    <MudTd>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                     Color="Color.Primary" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => ShowEditDialog(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                     Color="Color.Error" 
+                                     Size="Size.Small"
+                                     OnClick="@(() => ShowDeleteDialog(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else if (_users != null)
+        {
+            <MudAlert Severity="Severity.Info" Class="mt-4">
+                No users found. Click "Load Users" to fetch data from the backend.
+            </MudAlert>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private List<USERS>? _users;
+    private bool _loading = false;
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+            
+            using var httpClient = new HttpClient();
+            var response = await httpClient.PostAsync("https://localhost:7001/api/User/GetAllAsync", null);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                _users = System.Text.Json.JsonSerializer.Deserialize<List<USERS>>(jsonContent);
+                Snackbar.Add($"Loaded {_users?.Count ?? 0} users successfully!", Severity.Success);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"API Error: {response.StatusCode} - {errorContent}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading users: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowAddDialog()
+    {
+        var parameters = new DialogParameters();
+        var dialog = await DialogService.ShowAsync<UserDialog>("Add New User", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Cancelled)
+        {
+            await LoadUsers(); // Refresh the list
+        }
+    }
+
+    private async Task ShowEditDialog(USERS user)
+    {
+        var parameters = new DialogParameters
+        {
+            ["User"] = user,
+            ["IsEdit"] = true
+        };
+        var dialog = await DialogService.ShowAsync<UserDialog>("Edit User", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Cancelled)
+        {
+            await LoadUsers(); // Refresh the list
+        }
+    }
+
+    private async Task ShowDeleteDialog(USERS user)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to delete user '{user.Name} {user.LastName}'?",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Cancelled)
+        {
+            await DeleteUser(user);
+        }
+    }
+
+    private async Task DeleteUser(USERS user)
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            var response = await httpClient.PostAsJsonAsync("https://localhost:7001/api/User/DeleteAsync", user);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add($"User '{user.Name} {user.LastName}' deleted successfully!", Severity.Success);
+                await LoadUsers(); // Refresh the list
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Delete failed: {response.StatusCode} - {errorContent}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting user: {ex.Message}", Severity.Error);
+        }
+    }
+}

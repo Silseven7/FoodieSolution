@@ -15,9 +15,7 @@ public class ORDER_ITEMS
     
     public decimal Price { get; set; }
     
-    [ForeignKey(nameof(Order))]
     public virtual ORDER Order { get; set; } = null!;
     
-    [ForeignKey(nameof(Product))]
     public virtual PRODUCT Product { get; set; } = null!;
 }
